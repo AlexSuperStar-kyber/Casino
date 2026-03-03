@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Казино</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #1a1a1a; color: #fff; }
+        input, button { padding: 10px; font-size: 16px; margin: 5px; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        #result { margin-top: 20px; font-weight: bold; }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <h1>Орёл или Решка</h1>
+    <p>Текущий баланс: <span id="balance">1000</span> монет</p>
+
+    <label for="bet">Ставка:</label>
+    <input type="number" id="bet" min="1" value="10">
+
+    <div>
+        <button onclick="play('heads')">Орёл</button>
+        <button onclick="play('tails')">Решка</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран
+
+        // Если нужно, можно отправить событие о готовности
+        tg.ready();
+
+        // Получаем данные пользователя (можно не использовать)
+        const user = tg.initDataUnsafe?.user;
+
+        // Функция игры
+        function play(choice) {
+            const betInput = document.getElementById('bet');
+            const bet = parseInt(betInput.value);
+            if (isNaN(bet) || bet <= 0) {
+                alert('Введите корректную ставку');
+                return;
+            }
+
+            // Генерируем результат (случайно)
+            const outcomes = ['heads', 'tails'];
+            const result = outcomes[Math.floor(Math.random() * outcomes.length)];
+            const win = (choice === result);
+
+            // Рассчитываем выигрыш/проигрыш
+            let amount = bet;
+            let resultText;
+            if (win) {
+                amount = bet; // выигрыш = ставка (коэффициент 2)
+                resultText = `Выигрыш! Выпал ${result === 'heads' ? 'Орёл' : 'Решка'}. +${amount} монет`;
+            } else {
+                amount = bet; // проигрыш = ставка
+                resultText = `Проигрыш... Выпал ${result === 'heads' ? 'Орёл' : 'Решка'}. -${amount} монет`;
+            }
+
+            // Отправляем данные боту
+            tg.sendData(JSON.stringify({
+                action: 'game_result',
+                bet: bet,
+                result: win ? 'win' : 'lose',
+                amount: amount
+            }));
+
+            // Отображаем результат в веб-приложении (но после отправки окно закроется)
+            document.getElementById('result').innerText = resultText;
+
+            // Можно закрыть веб-приложение через некоторое время
+            setTimeout(() => tg.close(), 1500);
+        }
+    </script>
+</body>
+</html>
